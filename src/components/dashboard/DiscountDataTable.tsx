@@ -40,8 +40,8 @@ export const DiscountDataTable: React.FC<DiscountDataTableProps> = ({ data, filt
         if (filters.paymentMethod && item.paymentMethod !== filters.paymentMethod) return false;
         if (filters.minDiscountAmount && (item.discountAmount || 0) < filters.minDiscountAmount) return false;
         if (filters.maxDiscountAmount && (item.discountAmount || 0) > filters.maxDiscountAmount) return false;
-        if (filters.minDiscountPercent && (item.grossDiscountPercent || 0) < filters.minDiscountPercent) return false;
-        if (filters.maxDiscountPercent && (item.grossDiscountPercent || 0) > filters.maxDiscountPercent) return false;
+        if (filters.minDiscountPercent && (item.discountPercentage || 0) < filters.minDiscountPercent) return false;
+        if (filters.maxDiscountPercent && (item.discountPercentage || 0) > filters.maxDiscountPercent) return false;
         if (filters.dateRange?.from || filters.dateRange?.to) {
           const itemDate = new Date(item.paymentDate);
           if (filters.dateRange.from && itemDate < filters.dateRange.from) return false;
@@ -62,9 +62,9 @@ export const DiscountDataTable: React.FC<DiscountDataTableProps> = ({ data, filt
             customer: item.customerName,
             product: item.cleanedProduct,
             category: item.cleanedCategory,
-            mrp: item.postTaxMrp || 0,
+            mrp: item.mrpPostTax || 0,
             discountAmount: item.discountAmount || 0,
-            discountPercent: item.grossDiscountPercent || 0,
+            discountPercent: item.discountPercentage || 0,
             finalPrice: item.paymentValue || 0,
             soldBy: item.soldBy === '-' ? 'Online/System' : item.soldBy,
             paymentMethod: item.paymentMethod,
@@ -78,9 +78,9 @@ export const DiscountDataTable: React.FC<DiscountDataTableProps> = ({ data, filt
           customer: `${discountedData.length} transactions`,
           product: 'Various',
           category: 'Various',
-          mrp: discountedData.reduce((sum, item) => sum + (item.postTaxMrp || 0), 0),
+          mrp: discountedData.reduce((sum, item) => sum + (item.mrpPostTax || 0), 0),
           discountAmount: discountedData.reduce((sum, item) => sum + (item.discountAmount || 0), 0),
-          discountPercent: discountedData.length > 0 ? discountedData.reduce((sum, item) => sum + (item.grossDiscountPercent || 0), 0) / discountedData.length : 0,
+          discountPercent: discountedData.length > 0 ? discountedData.reduce((sum, item) => sum + (item.discountPercentage || 0), 0) / discountedData.length : 0,
           finalPrice: discountedData.reduce((sum, item) => sum + (item.paymentValue || 0), 0),
           soldBy: 'Various',
           paymentMethod: 'Various',
@@ -108,8 +108,8 @@ export const DiscountDataTable: React.FC<DiscountDataTableProps> = ({ data, filt
           acc[product].totalDiscount += item.discountAmount || 0;
           acc[product].transactions += 1;
           acc[product].totalRevenue += item.paymentValue || 0;
-          acc[product].totalMrp += item.postTaxMrp || 0;
-          acc[product].avgDiscountPercent += item.grossDiscountPercent || 0;
+          acc[product].totalMrp += item.mrpPostTax || 0;
+          acc[product].avgDiscountPercent += item.discountPercentage || 0;
           acc[product].maxDiscount = Math.max(acc[product].maxDiscount, item.discountAmount || 0);
           acc[product].customers.add(item.customerEmail);
           return acc;
@@ -155,9 +155,9 @@ export const DiscountDataTable: React.FC<DiscountDataTableProps> = ({ data, filt
           acc[category].totalDiscount += item.discountAmount || 0;
           acc[category].transactions += 1;
           acc[category].totalRevenue += item.paymentValue || 0;
-          acc[category].totalMrp += item.postTaxMrp || 0;
+          acc[category].totalMrp += item.mrpPostTax || 0;
           acc[category].uniqueProducts.add(item.cleanedProduct);
-          acc[category].avgDiscountPercent += item.grossDiscountPercent || 0;
+          acc[category].avgDiscountPercent += item.discountPercentage || 0;
           acc[category].customers.add(item.customerEmail);
           return acc;
         }, {} as Record<string, any>);
@@ -201,9 +201,9 @@ export const DiscountDataTable: React.FC<DiscountDataTableProps> = ({ data, filt
           acc[staff].totalDiscount += item.discountAmount || 0;
           acc[staff].transactions += 1;
           acc[staff].totalRevenue += item.paymentValue || 0;
-          acc[staff].totalMrp += item.postTaxMrp || 0;
+          acc[staff].totalMrp += item.mrpPostTax || 0;
           acc[staff].uniqueCustomers.add(item.customerEmail);
-          acc[staff].avgDiscountPercent += item.grossDiscountPercent || 0;
+          acc[staff].avgDiscountPercent += item.discountPercentage || 0;
           return acc;
         }, {} as Record<string, any>);
 

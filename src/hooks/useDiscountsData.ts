@@ -85,8 +85,8 @@ export const useDiscountsData = () => {
           // Parse discount amount and percentage safely
           const discountAmount = parseNumericValue(row[22]); // Column 23: Discount Amount -Mrp- Payment Value
           const discountPercentage = parseNumericValue(row[23]); // Column 24: Discount Percentage
-          const preTaxMrp = parseNumericValue(row[20]); // Column 21: Mrp - Pre Tax
-          const postTaxMrp = parseNumericValue(row[21]); // Column 22: Mrp - Post Tax
+          const mrpPreTax = parseNumericValue(row[20]); // Column 21: Mrp - Pre Tax
+          const mrpPostTax = parseNumericValue(row[21]); // Column 22: Mrp - Post Tax
           const paymentValue = parseNumericValue(row[6]); // Column 7: Payment Value
           const paymentVAT = parseNumericValue(row[8]); // Column 9: Payment VAT
 
@@ -100,7 +100,6 @@ export const useDiscountsData = () => {
             memberId: String(row[0] || ''), // Column 1: Member ID
             customerName: String(row[1] || ''), // Column 2: Customer Name
             customerEmail: String(row[2] || ''), // Column 3: Customer Email
-            payingMemberId: String(row[0] || ''), // Using Member ID as paying member ID
             saleItemId: String(row[3] || ''), // Column 4: Sale Item ID
             paymentCategory: String(row[4] || ''), // Column 5: Payment Category
             paymentDate: String(row[5] || ''), // Column 6: Payment Date
@@ -119,14 +118,14 @@ export const useDiscountsData = () => {
             cleanedCategory: String(row[18] || ''), // Column 19: Cleaned Category
             membershipType: String(row[24] || ''), // Column 25: Membership Type
             // Discount-specific fields
-            preTaxMrp: preTaxMrp, // Column 21: Mrp - Pre Tax
-            postTaxMrp: postTaxMrp, // Column 22: Mrp - Post Tax
+            mrpPreTax: mrpPreTax, // Column 21: Mrp - Pre Tax
+            mrpPostTax: mrpPostTax, // Column 22: Mrp - Post Tax
             discountAmount: Math.abs(discountAmount), // Column 23: Discount Amount (absolute value)
-            grossDiscountPercent: Math.abs(discountPercentage), // Column 24: Discount Percentage (absolute value)
-            netDiscountPercent: Math.abs(discountPercentage),
-            grossRevenue: postTaxMrp || preTaxMrp || paymentValue, // Use Post Tax MRP, fallback to Pre Tax, then Payment Value
+            discountPercentage: Math.abs(discountPercentage), // Column 24: Discount Percentage (absolute value)
+            grossRevenue: mrpPostTax || mrpPreTax || paymentValue, // Use Post Tax MRP, fallback to Pre Tax, then Payment Value
             vat: paymentVAT, // Payment VAT
             netRevenue: paymentValue, // Payment Value as net revenue
+            hostId: String(row[19] || ''), // Column 20: Host Id
           };
         } catch (err) {
           console.error(`Error parsing row ${index + 1}:`, err, row);
@@ -149,10 +148,10 @@ export const useDiscountsData = () => {
           product: item.cleanedProduct,
           customer: item.customerName,
           discountAmount: item.discountAmount,
-          grossDiscountPercent: item.grossDiscountPercent,
+          discountPercentage: item.discountPercentage,
           paymentValue: item.paymentValue,
-          preTaxMrp: item.preTaxMrp,
-          postTaxMrp: item.postTaxMrp,
+          mrpPreTax: item.mrpPreTax,
+          mrpPostTax: item.mrpPostTax,
           rawDiscountCol: item.discountAmount // This should show the raw parsed value
         })));
       }

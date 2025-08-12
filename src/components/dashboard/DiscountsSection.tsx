@@ -32,9 +32,9 @@ const DiscountsSection = () => {
       date: item.paymentDate || '',
       location: item.calculatedLocation || 'Unknown',
       itemsSold: 1, // Each sales record represents one item sold
-      mrpPreTax: item.preTaxMrp || item.paymentValue || 0,
-      discountPercentage: item.grossDiscountPercent || 0,
-      mrpPostTax: item.postTaxMrp || item.paymentValue || 0,
+      mrpPreTax: item.mrpPreTax || item.paymentValue || 0,
+      discountPercentage: item.discountPercentage || 0,
+      mrpPostTax: item.mrpPostTax || item.paymentValue || 0,
       tax: item.paymentVAT || 0,
       totalRevenue: item.paymentValue || 0
     }));
