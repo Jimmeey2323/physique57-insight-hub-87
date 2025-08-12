@@ -159,13 +159,22 @@ const ExecutiveSummarySection = () => {
     type: 'metric' as const
   });
 
+  // Helper function to safely parse dates
+  const safeParseDate = (dateString: string) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
   // Filter data based on global filters
   const filteredSalesData = useMemo(() => {
     if (!salesData) return [];
     return salesData.filter(sale => {
-      const saleDate = new Date(sale.paymentDate);
-      const startDate = globalFilters.dateRange.start ? new Date(globalFilters.dateRange.start) : null;
-      const endDate = globalFilters.dateRange.end ? new Date(globalFilters.dateRange.end) : null;
+      const saleDate = safeParseDate(sale.paymentDate);
+      if (!saleDate) return false;
+      
+      const startDate = globalFilters.dateRange.start ? safeParseDate(globalFilters.dateRange.start) : null;
+      const endDate = globalFilters.dateRange.end ? safeParseDate(globalFilters.dateRange.end) : null;
       
       if (startDate && saleDate < startDate) return false;
       if (endDate && saleDate > endDate) return false;
@@ -177,9 +186,11 @@ const ExecutiveSummarySection = () => {
   const filteredSessionsData = useMemo(() => {
     if (!sessionsData) return [];
     return sessionsData.filter(session => {
-      const sessionDate = new Date(session.date);
-      const startDate = globalFilters.dateRange.start ? new Date(globalFilters.dateRange.start) : null;
-      const endDate = globalFilters.dateRange.end ? new Date(globalFilters.dateRange.end) : null;
+      const sessionDate = safeParseDate(session.date);
+      if (!sessionDate) return false;
+      
+      const startDate = globalFilters.dateRange.start ? safeParseDate(globalFilters.dateRange.start) : null;
+      const endDate = globalFilters.dateRange.end ? safeParseDate(globalFilters.dateRange.end) : null;
       
       if (startDate && sessionDate < startDate) return false;
       if (endDate && sessionDate > endDate) return false;
@@ -191,9 +202,11 @@ const ExecutiveSummarySection = () => {
   const filteredNewClientData = useMemo(() => {
     if (!newClientData) return [];
     return newClientData.filter(client => {
-      const clientDate = new Date(client.firstVisitDate);
-      const startDate = globalFilters.dateRange.start ? new Date(globalFilters.dateRange.start) : null;
-      const endDate = globalFilters.dateRange.end ? new Date(globalFilters.dateRange.end) : null;
+      const clientDate = safeParseDate(client.firstVisitDate);
+      if (!clientDate) return false;
+      
+      const startDate = globalFilters.dateRange.start ? safeParseDate(globalFilters.dateRange.start) : null;
+      const endDate = globalFilters.dateRange.end ? safeParseDate(globalFilters.dateRange.end) : null;
       
       if (startDate && clientDate < startDate) return false;
       if (endDate && clientDate > endDate) return false;
@@ -205,9 +218,11 @@ const ExecutiveSummarySection = () => {
   const filteredLeadsData = useMemo(() => {
     if (!leadsData) return [];
     return leadsData.filter(lead => {
-      const leadDate = new Date(lead.createdAt);
-      const startDate = globalFilters.dateRange.start ? new Date(globalFilters.dateRange.start) : null;
-      const endDate = globalFilters.dateRange.end ? new Date(globalFilters.dateRange.end) : null;
+      const leadDate = safeParseDate(lead.createdAt);
+      if (!leadDate) return false;
+      
+      const startDate = globalFilters.dateRange.start ? safeParseDate(globalFilters.dateRange.start) : null;
+      const endDate = globalFilters.dateRange.end ? safeParseDate(globalFilters.dateRange.end) : null;
       
       if (startDate && leadDate < startDate) return false;
       if (endDate && leadDate > endDate) return false;
@@ -251,13 +266,16 @@ const ExecutiveSummarySection = () => {
     };
   }, [filteredSalesData, filteredSessionsData, filteredNewClientData, filteredLeadsData]);
 
-  // Chart data preparation
+  // Chart data preparation with safe date handling
   const revenueChartData = useMemo(() => {
     if (!filteredSalesData.length) return [];
     
     const dailyRevenue = filteredSalesData.reduce((acc, sale) => {
-      const date = new Date(sale.paymentDate).toISOString().split('T')[0];
-      acc[date] = (acc[date] || 0) + (sale.netRevenue || 0);
+      const saleDate = safeParseDate(sale.paymentDate);
+      if (!saleDate) return acc;
+      
+      const dateKey = saleDate.toISOString().split('T')[0];
+      acc[dateKey] = (acc[dateKey] || 0) + (sale.netRevenue || 0);
       return acc;
     }, {} as Record<string, number>);
 
@@ -271,12 +289,15 @@ const ExecutiveSummarySection = () => {
     if (!filteredSessionsData.length) return [];
     
     const dailySessions = filteredSessionsData.reduce((acc, session) => {
-      const date = session.date;
-      if (!acc[date]) {
-        acc[date] = { date, sessions: 0, attendance: 0 };
+      const sessionDate = safeParseDate(session.date);
+      if (!sessionDate) return acc;
+      
+      const dateKey = sessionDate.toISOString().split('T')[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = { date: dateKey, sessions: 0, attendance: 0 };
       }
-      acc[date].sessions += 1;
-      acc[date].attendance += session.checkedInCount;
+      acc[dateKey].sessions += 1;
+      acc[dateKey].attendance += session.checkedInCount;
       return acc;
     }, {} as Record<string, any>);
 
