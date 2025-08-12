@@ -9,8 +9,41 @@ const GOOGLE_CONFIG = {
   TOKEN_URL: "https://oauth2.googleapis.com/token"
 };
 
-
 const SPREADSHEET_ID = "149ILDqovzZA6FRUJKOwzutWdVqmqWBtWPfzG3A0zxTI";
+
+// Safe date parser for DD/MM/YYYY format
+const parseSalesDate = (dateString: string): string => {
+  if (!dateString || dateString.trim() === '') return '';
+  
+  try {
+    // Handle DD/MM/YYYY format
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      
+      // Create date in YYYY-MM-DD format for consistent parsing
+      const isoDate = `${year}-${month}-${day}`;
+      const testDate = new Date(isoDate);
+      
+      if (!isNaN(testDate.getTime())) {
+        return isoDate;
+      }
+    }
+    
+    // Fallback: try parsing as-is
+    const fallbackDate = new Date(dateString);
+    if (!isNaN(fallbackDate.getTime())) {
+      return fallbackDate.toISOString().split('T')[0];
+    }
+    
+    return '';
+  } catch (error) {
+    console.warn('Failed to parse date:', dateString, error);
+    return '';
+  }
+};
 
 export const useGoogleSheets = () => {
   const [data, setData] = useState<SalesData[]>([]);
@@ -32,6 +65,10 @@ export const useGoogleSheets = () => {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`Token request failed: ${response.status}`);
+      }
+
       const tokenData = await response.json();
       return tokenData.access_token;
     } catch (error) {
@@ -43,6 +80,8 @@ export const useGoogleSheets = () => {
   const fetchSalesData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const accessToken = await getAccessToken();
       
       const response = await fetch(
@@ -55,46 +94,70 @@ export const useGoogleSheets = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch data');
+        throw new Error(`Failed to fetch data: ${response.status}`);
       }
 
       const result = await response.json();
       const rows = result.values || [];
       
       if (rows.length < 2) {
+        console.warn('No data rows found in Sales sheet');
         setData([]);
         return;
       }
 
-      const headers = rows[0];
-      const salesData: SalesData[] = rows.slice(1).map((row: any[]) => ({
-        memberId: row[0] || '',
-        customerName: row[1] || '',
-        customerEmail: row[2] || '',
-        saleItemId: row[3] || '',
-        paymentCategory: row[4] || '',
-        membershipType: row[5] || '',
-        paymentDate: row[6] || '',
-        paymentValue: parseFloat(row[7]) || 0,
-        paidInMoneyCredits: parseFloat(row[8]) || 0,
-        paymentVAT: parseFloat(row[9]) || 0,
-        paymentItem: row[10] || '',
-        paymentStatus: row[11] || '',
-        paymentMethod: row[12] || '',
-        paymentTransactionId: row[13] || '',
-        stripeToken: row[14] || '',
-        soldBy: row[15] || '',
-        saleReference: row[16] || '',
-        calculatedLocation: row[17] || '',
-        cleanedProduct: row[18] || '',
-        cleanedCategory: row[19] || '',
-      }));
+      // Map according to the provided sheet structure
+      const salesData: SalesData[] = rows.slice(1).map((row: any[]) => {
+        const paymentValue = parseFloat(row[6]) || 0;
+        const paymentVAT = parseFloat(row[8]) || 0;
+        const mrpPreTax = parseFloat(row[20]) || 0;
+        const mrpPostTax = parseFloat(row[21]) || 0;
+        const discountAmount = parseFloat(row[22]) || 0;
+        
+        // Calculate net revenue (payment value minus VAT)
+        const netRevenue = paymentValue - paymentVAT;
+        
+        return {
+          memberId: row[0] || '',
+          customerName: row[1] || '',
+          customerEmail: row[2] || '',
+          saleItemId: row[3] || '',
+          paymentCategory: row[4] || '',
+          paymentDate: parseSalesDate(row[5]) || '',
+          paymentValue: paymentValue,
+          paidInMoneyCredits: parseFloat(row[7]) || 0,
+          paymentVAT: paymentVAT,
+          paymentItem: row[9] || '',
+          paymentStatus: row[11] || '',
+          paymentMethod: row[10] || '',
+          paymentTransactionId: row[12] || '',
+          stripeToken: row[13] || '',
+          soldBy: row[14] || 'Unknown',
+          saleReference: row[15] || '',
+          calculatedLocation: row[16] || '',
+          cleanedProduct: row[17] || '',
+          cleanedCategory: row[18] || '',
+          
+          // Additional derived fields
+          netRevenue: netRevenue,
+          vat: paymentVAT,
+          grossRevenue: paymentValue,
+          mrpPreTax: mrpPreTax,
+          mrpPostTax: mrpPostTax,
+          discountAmount: discountAmount,
+          discountPercentage: parseFloat(row[23]) || 0,
+          membershipType: row[24] || '',
+          hostId: row[19] || ''
+        };
+      }).filter(item => item.paymentDate !== ''); // Filter out invalid dates
 
+      console.log('Successfully parsed sales data:', salesData.length, 'records');
+      console.log('Sample record:', salesData[0]);
+      
       setData(salesData);
-      setError(null);
     } catch (err) {
       console.error('Error fetching sales data:', err);
-      setError('Failed to load sales data');
+      setError(err instanceof Error ? err.message : 'Failed to load sales data');
     } finally {
       setLoading(false);
     }

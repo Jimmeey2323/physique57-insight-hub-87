@@ -1,9 +1,7 @@
-
 export interface SalesData {
   memberId: string;
   customerName: string;
   customerEmail: string;
-  payingMemberId: string;
   saleItemId: string;
   paymentCategory: string;
   membershipType: string;
@@ -21,14 +19,16 @@ export interface SalesData {
   calculatedLocation: string;
   cleanedProduct: string;
   cleanedCategory: string;
+  
+  // Additional derived fields
+  netRevenue: number;
+  vat: number;
+  grossRevenue: number;
+  mrpPreTax?: number;
+  mrpPostTax?: number;
   discountAmount?: number;
-  grossRevenue?: number;
-  preTaxMrp?: number;
-  vat?: number;
-  netRevenue?: number;
-  postTaxMrp?: number;
-  grossDiscountPercent?: number;
-  netDiscountPercent?: number;
+  discountPercentage?: number;
+  hostId?: string;
 }
 
 export interface SessionData {

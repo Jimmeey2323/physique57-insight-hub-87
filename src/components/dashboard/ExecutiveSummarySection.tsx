@@ -39,12 +39,12 @@ import { useSessionsData } from '@/hooks/useSessionsData';
 import { useNewClientData } from '@/hooks/useNewClientData';
 import { useLeadsData } from '@/hooks/useLeadsData';
 import { useNavigate } from 'react-router-dom';
+import { useGlobalFilters } from '@/contexts/GlobalFiltersContext';
 import { DrillDownModal } from './DrillDownModal';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { getPreviousMonthDateRange } from '@/utils/dateUtils';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 
 // Executive Summary Filter Section Component
@@ -69,11 +69,17 @@ const ExecutiveSummaryFilters = ({
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-purple-800">
                 <Filter className="w-5 h-5" />
-                Executive Dashboard Filters
+                Global Dashboard Filters
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-purple-600 border-purple-300">
-                  Global Filters
+                  {filters && filters.dateRange && filters.dateRange.start && filters.dateRange.end ? (
+                    <>
+                      {new Date(filters.dateRange.start).toLocaleDateString()} - {new Date(filters.dateRange.end).toLocaleDateString()}
+                    </>
+                  ) : (
+                    'No Date Filter'
+                  )}
                 </Badge>
                 {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
               </div>
@@ -138,19 +144,9 @@ const ExecutiveSummarySection = () => {
   const { data: sessionsData, loading: sessionsLoading } = useSessionsData();
   const { data: newClientData, loading: newClientLoading } = useNewClientData();
   const { data: leadsData, loading: leadsLoading } = useLeadsData();
-
-  // Initialize filters with previous month date range
-  const [globalFilters, setGlobalFilters] = useState(() => {
-    const previousMonth = getPreviousMonthDateRange();
-    return {
-      dateRange: previousMonth,
-      location: [],
-      category: [],
-      product: [],
-      soldBy: [],
-      paymentMethod: []
-    };
-  });
+  
+  // Use global filters context
+  const { filters: globalFilters, updateFilters, clearFilters } = useGlobalFilters();
 
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(true);
   const [drillDownModal, setDrillDownModal] = useState({
@@ -162,8 +158,12 @@ const ExecutiveSummarySection = () => {
   // Helper function to safely parse dates
   const safeParseDate = (dateString: string) => {
     if (!dateString) return null;
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? null : date;
+    try {
+      const date = new Date(dateString);
+      return isNaN(date.getTime()) ? null : date;
+    } catch {
+      return null;
+    }
   };
 
   // Filter data based on global filters
@@ -178,6 +178,13 @@ const ExecutiveSummarySection = () => {
       
       if (startDate && saleDate < startDate) return false;
       if (endDate && saleDate > endDate) return false;
+      
+      // Apply other filters
+      if (globalFilters.location.length > 0 && !globalFilters.location.includes(sale.calculatedLocation)) return false;
+      if (globalFilters.category.length > 0 && !globalFilters.category.includes(sale.cleanedCategory)) return false;
+      if (globalFilters.product.length > 0 && !globalFilters.product.includes(sale.cleanedProduct)) return false;
+      if (globalFilters.soldBy.length > 0 && !globalFilters.soldBy.includes(sale.soldBy)) return false;
+      if (globalFilters.paymentMethod.length > 0 && !globalFilters.paymentMethod.includes(sale.paymentMethod)) return false;
       
       return true;
     });
@@ -226,6 +233,13 @@ const ExecutiveSummarySection = () => {
       
       if (startDate && leadDate < startDate) return false;
       if (endDate && leadDate > endDate) return false;
+      
+      // Apply other filters
+      if (globalFilters.location.length > 0 && !globalFilters.location.includes(lead.center)) return false;
+      if (globalFilters.category.length > 0 && !globalFilters.category.includes(lead.source)) return false;
+      if (globalFilters.product.length > 0 && !globalFilters.product.includes(lead.stage)) return false;
+      if (globalFilters.soldBy.length > 0 && !globalFilters.soldBy.includes(lead.status)) return false;
+      if (globalFilters.paymentMethod.length > 0 && !globalFilters.paymentMethod.includes(lead.associate)) return false;
       
       return true;
     });
@@ -311,18 +325,6 @@ const ExecutiveSummarySection = () => {
       isOpen: true,
       data,
       type
-    });
-  };
-
-  const clearFilters = () => {
-    const previousMonth = getPreviousMonthDateRange();
-    setGlobalFilters({
-      dateRange: previousMonth,
-      location: [],
-      category: [],
-      product: [],
-      soldBy: [],
-      paymentMethod: []
     });
   };
 
@@ -523,7 +525,7 @@ const ExecutiveSummarySection = () => {
         {/* Global Filters */}
         <ExecutiveSummaryFilters
           filters={globalFilters}
-          onFiltersChange={setGlobalFilters}
+          onFiltersChange={updateFilters}
           onClearFilters={clearFilters}
           isCollapsed={isFilterCollapsed}
           onToggleCollapse={() => setIsFilterCollapsed(!isFilterCollapsed)}
@@ -588,7 +590,15 @@ const ExecutiveSummarySection = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <ChartContainer
+                  config={{
+                    revenue: {
+                      label: "Revenue",
+                      color: "hsl(var(--chart-1))",
+                    },
+                  }}
+                  className="h-64"
+                >
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={revenueChartData}>
                       <defs>
@@ -620,7 +630,7 @@ const ExecutiveSummarySection = () => {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
+                </ChartContainer>
               </CardContent>
             </Card>
           </motion.div>
@@ -639,7 +649,19 @@ const ExecutiveSummarySection = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <ChartContainer
+                  config={{
+                    sessions: {
+                      label: "Sessions",
+                      color: "hsl(var(--chart-2))",
+                    },
+                    attendance: {
+                      label: "Attendance",
+                      color: "hsl(var(--chart-3))",
+                    },
+                  }}
+                  className="h-64"
+                >
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={sessionChartData}>
                       <XAxis 
@@ -656,7 +678,7 @@ const ExecutiveSummarySection = () => {
                       <Bar dataKey="attendance" fill="#06b6d4" name="Attendance" />
                     </BarChart>
                   </ResponsiveContainer>
-                </div>
+                </ChartContainer>
               </CardContent>
             </Card>
           </motion.div>
