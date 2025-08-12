@@ -16,7 +16,6 @@ import {
   Activity,
   Clock
 } from 'lucide-react';
-import { useLeads } from '@/contexts/LeadContext';
 import {
   Popover,
   PopoverContent,
@@ -34,65 +33,109 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-export const LeadDetailedFilterSection: React.FC = () => {
-  const { 
-    filters, 
-    setFilters, 
-    clearFilters,
-    sourceOptions,
-    associateOptions,
-    centerOptions,
-    stageOptions,
-    statusOptions
-  } = useLeads();
+interface LeadFilters {
+  source: string[];
+  associate: string[];
+  center: string[];
+  stage: string[];
+  status: string[];
+  dateRange: {
+    start: Date | null;
+    end: Date | null;
+  };
+}
 
+interface LeadDetailedFilterSectionProps {
+  filters?: LeadFilters;
+  onFiltersChange?: (filters: LeadFilters) => void;
+  onClearFilters?: () => void;
+  uniqueValues?: {
+    sources: string[];
+    associates: string[];
+    centers: string[];
+    stages: string[];
+    statuses: string[];
+  };
+}
+
+export const LeadDetailedFilterSection: React.FC<LeadDetailedFilterSectionProps> = ({
+  filters,
+  onFiltersChange,
+  onClearFilters,
+  uniqueValues
+}) => {
   const [openPopover, setOpenPopover] = useState<string | null>(null);
+
+  // Default values if props are not provided
+  const defaultFilters: LeadFilters = {
+    source: [],
+    associate: [],
+    center: [],
+    stage: [],
+    status: [],
+    dateRange: {
+      start: null,
+      end: null
+    }
+  };
+
+  const currentFilters = filters || defaultFilters;
+  const defaultUniqueValues = {
+    sources: [],
+    associates: [],
+    centers: [],
+    stages: [],
+    statuses: []
+  };
+  const currentUniqueValues = uniqueValues || defaultUniqueValues;
 
   const filterConfigs = [
     {
       key: 'source',
       label: 'Lead Sources',
       icon: Tag,
-      options: sourceOptions,
-      values: filters.source as string[],
+      options: currentUniqueValues.sources,
+      values: currentFilters.source as string[],
       description: 'Filter by lead generation sources'
     },
     {
       key: 'associate',
       label: 'Associates',
       icon: Users,
-      options: associateOptions,
-      values: filters.associate as string[],
+      options: currentUniqueValues.associates,
+      values: currentFilters.associate as string[],
       description: 'Filter by sales associates'
     },
     {
       key: 'center',
       label: 'Centers',
       icon: Building,
-      options: centerOptions,
-      values: filters.center as string[],
+      options: currentUniqueValues.centers,
+      values: currentFilters.center as string[],
       description: 'Filter by business centers'
     },
     {
       key: 'stage',
       label: 'Lead Stages',
       icon: Activity,
-      options: stageOptions,
-      values: filters.stage as string[],
+      options: currentUniqueValues.stages,
+      values: currentFilters.stage as string[],
       description: 'Filter by lead pipeline stages'
     },
     {
       key: 'status',
       label: 'Status',
       icon: Clock,
-      options: statusOptions,
-      values: filters.status as string[],
+      options: currentUniqueValues.statuses,
+      values: currentFilters.status as string[],
       description: 'Filter by lead status'
     }
   ];
 
   const handleFilterChange = (filterKey: string, value: string) => {
-    const currentValues = [...(filters[filterKey as keyof typeof filters] as string[])];
+    if (!onFiltersChange) return;
+
+    const currentValues = [...(currentFilters[filterKey as keyof typeof currentFilters] as string[])];
     const index = currentValues.indexOf(value);
     
     if (index > -1) {
@@ -101,39 +144,53 @@ export const LeadDetailedFilterSection: React.FC = () => {
       currentValues.push(value);
     }
     
-    setFilters({ 
-      ...filters, 
+    onFiltersChange({ 
+      ...currentFilters, 
       [filterKey]: currentValues 
     });
   };
 
   const handleDateRangeChange = (type: 'start' | 'end', date: Date | null) => {
-    setFilters({
-      ...filters,
+    if (!onFiltersChange) return;
+
+    onFiltersChange({
+      ...currentFilters,
       dateRange: {
-        ...filters.dateRange,
+        ...currentFilters.dateRange,
         [type]: date
       }
     });
   };
 
   const clearFilter = (filterKey: string) => {
-    setFilters({
-      ...filters,
+    if (!onFiltersChange) return;
+
+    onFiltersChange({
+      ...currentFilters,
       [filterKey]: []
     });
   };
 
   const clearDateRange = () => {
-    setFilters({
-      ...filters,
+    if (!onFiltersChange) return;
+
+    onFiltersChange({
+      ...currentFilters,
       dateRange: { start: null, end: null }
     });
   };
 
   const activeFilterCount = filterConfigs.reduce((count, config) => {
     return count + config.values.length;
-  }, 0) + (filters.dateRange.start ? 1 : 0) + (filters.dateRange.end ? 1 : 0);
+  }, 0) + (currentFilters.dateRange.start ? 1 : 0) + (currentFilters.dateRange.end ? 1 : 0);
+
+  const handleClearAll = () => {
+    if (onClearFilters) {
+      onClearFilters();
+    } else if (onFiltersChange) {
+      onFiltersChange(defaultFilters);
+    }
+  };
 
   const MultiSelectFilter = ({ config }: { config: typeof filterConfigs[0] }) => (
     <div className="space-y-2">
@@ -251,7 +308,7 @@ export const LeadDetailedFilterSection: React.FC = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={clearFilters}
+              onClick={handleClearAll}
               disabled={activeFilterCount === 0}
               className="gap-1"
             >
@@ -285,7 +342,7 @@ export const LeadDetailedFilterSection: React.FC = () => {
                     <CalendarIcon className="w-4 h-4" />
                     Start Date
                   </label>
-                  {filters.dateRange.start && (
+                  {currentFilters.dateRange.start && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -303,8 +360,8 @@ export const LeadDetailedFilterSection: React.FC = () => {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filters.dateRange.start 
-                        ? format(filters.dateRange.start, 'PPP')
+                      {currentFilters.dateRange.start 
+                        ? format(currentFilters.dateRange.start, 'PPP')
                         : 'Select start date'
                       }
                     </Button>
@@ -312,11 +369,11 @@ export const LeadDetailedFilterSection: React.FC = () => {
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={filters.dateRange.start || undefined}
+                      selected={currentFilters.dateRange.start || undefined}
                       onSelect={(date) => handleDateRangeChange('start', date || null)}
                       disabled={(date) => 
-                        filters.dateRange.end 
-                          ? date > filters.dateRange.end 
+                        currentFilters.dateRange.end 
+                          ? date > currentFilters.dateRange.end 
                           : false
                       }
                       initialFocus
@@ -331,7 +388,7 @@ export const LeadDetailedFilterSection: React.FC = () => {
                     <CalendarIcon className="w-4 h-4" />
                     End Date
                   </label>
-                  {filters.dateRange.end && (
+                  {currentFilters.dateRange.end && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -349,8 +406,8 @@ export const LeadDetailedFilterSection: React.FC = () => {
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {filters.dateRange.end 
-                        ? format(filters.dateRange.end, 'PPP')
+                      {currentFilters.dateRange.end 
+                        ? format(currentFilters.dateRange.end, 'PPP')
                         : 'Select end date'
                       }
                     </Button>
@@ -358,11 +415,11 @@ export const LeadDetailedFilterSection: React.FC = () => {
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={filters.dateRange.end || undefined}
+                      selected={currentFilters.dateRange.end || undefined}
                       onSelect={(date) => handleDateRangeChange('end', date || null)}
                       disabled={(date) => 
-                        filters.dateRange.start 
-                          ? date < filters.dateRange.start 
+                        currentFilters.dateRange.start 
+                          ? date < currentFilters.dateRange.start 
                           : false
                       }
                       initialFocus
@@ -372,13 +429,13 @@ export const LeadDetailedFilterSection: React.FC = () => {
               </div>
             </div>
             
-            {(filters.dateRange.start || filters.dateRange.end) && (
+            {(currentFilters.dateRange.start || currentFilters.dateRange.end) && (
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div className="text-sm text-blue-800">
                   <strong>Selected Range:</strong> {' '}
-                  {filters.dateRange.start && format(filters.dateRange.start, 'MMM d, yyyy')}
-                  {filters.dateRange.start && filters.dateRange.end && ' to '}
-                  {filters.dateRange.end && format(filters.dateRange.end, 'MMM d, yyyy')}
+                  {currentFilters.dateRange.start && format(currentFilters.dateRange.start, 'MMM d, yyyy')}
+                  {currentFilters.dateRange.start && currentFilters.dateRange.end && ' to '}
+                  {currentFilters.dateRange.end && format(currentFilters.dateRange.end, 'MMM d, yyyy')}
                 </div>
                 <Button
                   variant="outline"

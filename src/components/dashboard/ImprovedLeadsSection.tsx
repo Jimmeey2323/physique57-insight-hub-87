@@ -36,29 +36,66 @@ export const ImprovedLeadsSection = () => {
   // Extract unique values for filters
   const uniqueValues = useMemo(() => {
     if (!leadsData) return {
-      locations: [],
       sources: [],
-      stages: [],
-      statuses: [],
       associates: [],
-      channels: [],
-      trialStatuses: [],
-      conversionStatuses: [],
-      retentionStatuses: []
+      centers: [],
+      stages: [],
+      statuses: []
     };
 
     return {
-      locations: [...new Set(leadsData.map(item => item.center).filter(Boolean))],
       sources: [...new Set(leadsData.map(item => item.source).filter(Boolean))],
-      stages: [...new Set(leadsData.map(item => item.stage).filter(Boolean))],
-      statuses: [...new Set(leadsData.map(item => item.status).filter(Boolean))],
       associates: [...new Set(leadsData.map(item => item.associate).filter(Boolean))],
-      channels: [...new Set(leadsData.map(item => item.channel).filter(Boolean))],
-      trialStatuses: [...new Set(leadsData.map(item => item.trialStatus).filter(Boolean))],
-      conversionStatuses: [...new Set(leadsData.map(item => item.conversionStatus).filter(Boolean))],
-      retentionStatuses: [...new Set(leadsData.map(item => item.retentionStatus).filter(Boolean))]
+      centers: [...new Set(leadsData.map(item => item.center).filter(Boolean))],
+      stages: [...new Set(leadsData.map(item => item.stage).filter(Boolean))],
+      statuses: [...new Set(leadsData.map(item => item.status).filter(Boolean))]
     };
   }, [leadsData]);
+
+  // Convert LeadsFilterOptions to the format expected by LeadDetailedFilterSection
+  const detailedFilters = useMemo(() => ({
+    source: filters.source,
+    associate: filters.associate,
+    center: filters.location, // Map location to center
+    stage: filters.stage,
+    status: filters.status,
+    dateRange: {
+      start: filters.dateRange.start ? new Date(filters.dateRange.start) : null,
+      end: filters.dateRange.end ? new Date(filters.dateRange.end) : null
+    }
+  }), [filters]);
+
+  const handleDetailedFiltersChange = (newFilters: any) => {
+    setFilters({
+      ...filters,
+      source: newFilters.source,
+      associate: newFilters.associate,
+      location: newFilters.center, // Map center back to location
+      stage: newFilters.stage,
+      status: newFilters.status,
+      dateRange: {
+        start: newFilters.dateRange.start ? newFilters.dateRange.start.toISOString() : '',
+        end: newFilters.dateRange.end ? newFilters.dateRange.end.toISOString() : ''
+      }
+    });
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      dateRange: { start: '', end: '' },
+      location: [],
+      source: [],
+      stage: [],
+      status: [],
+      associate: [],
+      channel: [],
+      trialStatus: [],
+      conversionStatus: [],
+      retentionStatus: [],
+      minLTV: undefined,
+      maxLTV: undefined
+    });
+  };
 
   // Filter leads data based on current filters
   const filteredLeadsData = useMemo(() => {
@@ -118,8 +155,9 @@ export const ImprovedLeadsSection = () => {
       <div className="container mx-auto px-6 py-8 space-y-8">
         {/* Filter Section */}
         <LeadDetailedFilterSection
-          filters={filters}
-          onFiltersChange={setFilters}
+          filters={detailedFilters}
+          onFiltersChange={handleDetailedFiltersChange}
+          onClearFilters={clearFilters}
           uniqueValues={uniqueValues}
         />
 
