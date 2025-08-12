@@ -3,17 +3,50 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Users, Target, Star, Award, Crown, MapPin, UserCheck } from 'lucide-react';
+import { LeadsData } from '@/types/leads';
 import { formatCurrency, formatNumber } from '@/utils/formatters';
 
 interface ImprovedLeadTopListsProps {
-  sourceStats: Record<string, any>;
-  associateStats: Record<string, any>;
+  data: LeadsData[];
 }
 
-export const ImprovedLeadTopLists: React.FC<ImprovedLeadTopListsProps> = ({
-  sourceStats,
-  associateStats
-}) => {
+export const ImprovedLeadTopLists: React.FC<ImprovedLeadTopListsProps> = ({ data }) => {
+  // Calculate source stats
+  const sourceStats = data.reduce((acc, lead) => {
+    const source = lead.source || 'Unknown';
+    if (!acc[source]) {
+      acc[source] = {
+        leads: 0,
+        conversions: 0,
+        ltv: 0
+      };
+    }
+    acc[source].leads += 1;
+    if (lead.conversionStatus === 'Converted') {
+      acc[source].conversions += 1;
+    }
+    acc[source].ltv += lead.ltv || 0;
+    return acc;
+  }, {} as Record<string, any>);
+
+  // Calculate associate stats
+  const associateStats = data.reduce((acc, lead) => {
+    const associate = lead.associate || 'Unknown';
+    if (!acc[associate]) {
+      acc[associate] = {
+        leads: 0,
+        conversions: 0,
+        ltv: 0
+      };
+    }
+    acc[associate].leads += 1;
+    if (lead.conversionStatus === 'Converted') {
+      acc[associate].conversions += 1;
+    }
+    acc[associate].ltv += lead.ltv || 0;
+    return acc;
+  }, {} as Record<string, any>);
+
   const topSources = Object.entries(sourceStats)
     .map(([source, stats]) => ({
       name: source,
