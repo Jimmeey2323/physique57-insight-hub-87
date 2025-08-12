@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -156,9 +155,8 @@ const ExecutiveSummarySection = () => {
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(true);
   const [drillDownModal, setDrillDownModal] = useState({
     isOpen: false,
-    data: [],
-    type: 'metric' as const,
-    title: ''
+    data: null,
+    type: 'metric' as const
   });
 
   // Filter data based on global filters
@@ -287,12 +285,11 @@ const ExecutiveSummarySection = () => {
       .slice(-30);
   }, [filteredSessionsData]);
 
-  const handleDrillDown = (data: any[], type: any, title: string) => {
+  const handleDrillDown = (data: any, type: any) => {
     setDrillDownModal({
       isOpen: true,
       data,
-      type,
-      title
+      type
     });
   };
 
@@ -319,7 +316,7 @@ const ExecutiveSummarySection = () => {
       description: 'Total revenue across all channels',
       color: 'from-green-500 to-emerald-600',
       bgColor: 'from-green-50 to-emerald-50',
-      onClick: () => handleDrillDown(filteredSalesData, 'metric', 'Revenue Details')
+      onClick: () => handleDrillDown(filteredSalesData, 'metric')
     },
     {
       title: 'Total Transactions',
@@ -330,7 +327,7 @@ const ExecutiveSummarySection = () => {
       description: 'Completed transactions',
       color: 'from-blue-500 to-cyan-600',
       bgColor: 'from-blue-50 to-cyan-50',
-      onClick: () => handleDrillDown(filteredSalesData, 'metric', 'Transaction Details')
+      onClick: () => handleDrillDown(filteredSalesData, 'metric')
     },
     {
       title: 'Active Sessions',
@@ -341,7 +338,7 @@ const ExecutiveSummarySection = () => {
       description: 'Classes conducted',
       color: 'from-purple-500 to-violet-600',
       bgColor: 'from-purple-50 to-violet-50',
-      onClick: () => handleDrillDown(filteredSessionsData, 'metric', 'Session Details')
+      onClick: () => handleDrillDown(filteredSessionsData, 'metric')
     },
     {
       title: 'New Clients',
@@ -352,7 +349,7 @@ const ExecutiveSummarySection = () => {
       description: 'New member acquisitions',
       color: 'from-orange-500 to-red-500',
       bgColor: 'from-orange-50 to-red-50',
-      onClick: () => handleDrillDown(filteredNewClientData, 'metric', 'New Client Details')
+      onClick: () => handleDrillDown(filteredNewClientData, 'metric')
     },
     {
       title: 'Total Leads',
@@ -363,7 +360,7 @@ const ExecutiveSummarySection = () => {
       description: 'Generated leads',
       color: 'from-pink-500 to-rose-600',
       bgColor: 'from-pink-50 to-rose-50',
-      onClick: () => handleDrillDown(filteredLeadsData, 'metric', 'Lead Details')
+      onClick: () => handleDrillDown(filteredLeadsData, 'metric')
     },
     {
       title: 'Avg Attendance',
@@ -374,7 +371,7 @@ const ExecutiveSummarySection = () => {
       description: 'Average session attendance',
       color: 'from-indigo-500 to-purple-600',
       bgColor: 'from-indigo-50 to-purple-50',
-      onClick: () => handleDrillDown(filteredSessionsData, 'metric', 'Attendance Details')
+      onClick: () => handleDrillDown(filteredSessionsData, 'metric')
     },
     {
       title: 'Client Conversion',
@@ -385,7 +382,7 @@ const ExecutiveSummarySection = () => {
       description: 'Trial to member conversion',
       color: 'from-teal-500 to-cyan-600',
       bgColor: 'from-teal-50 to-cyan-50',
-      onClick: () => handleDrillDown(filteredNewClientData.filter(c => c.conversionStatus === 'Converted'), 'metric', 'Converted Clients')
+      onClick: () => handleDrillDown(filteredNewClientData.filter(c => c.conversionStatus === 'Converted'), 'metric')
     },
     {
       title: 'Lead Conversion',
@@ -396,7 +393,7 @@ const ExecutiveSummarySection = () => {
       description: 'Lead to customer conversion',
       color: 'from-amber-500 to-yellow-600',
       bgColor: 'from-amber-50 to-yellow-50',
-      onClick: () => handleDrillDown(filteredLeadsData.filter(l => l.conversionStatus === 'Converted'), 'metric', 'Converted Leads')
+      onClick: () => handleDrillDown(filteredLeadsData.filter(l => l.conversionStatus === 'Converted'), 'metric')
     }
   ];
 
@@ -695,8 +692,6 @@ const ExecutiveSummarySection = () => {
         onClose={() => setDrillDownModal(prev => ({ ...prev, isOpen: false }))}
         data={drillDownModal.data}
         type={drillDownModal.type}
-        title={drillDownModal.title}
-        columns={[]}
       />
     </div>
   );
